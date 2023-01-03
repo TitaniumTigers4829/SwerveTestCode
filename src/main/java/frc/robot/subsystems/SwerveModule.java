@@ -4,6 +4,7 @@
 
 package frc.robot.subsystems;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
@@ -13,6 +14,9 @@ import com.ctre.phoenix.sensors.CANCoderStatusFrame;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.SwerveConstants;
@@ -26,8 +30,11 @@ public class SwerveModule extends SubsystemBase {
 
   PIDController drivePidController = new PIDController(SwerveConstants.driveP,
    SwerveConstants.driveI, SwerveConstants.driveD);
+  SimpleMotorFeedforward driveFeedforward = new SimpleMotorFeedforward(0, 0);
+
   ProfiledPIDController turnPIDController = new ProfiledPIDController(SwerveConstants.turnP, 
     SwerveConstants.turnI, SwerveConstants.turnD, SwerveConstants.constraints);
+  SimpleMotorFeedforward turnFeedforward = new SimpleMotorFeedforward(0, 0);
 
   int id = 0;
 
@@ -45,18 +52,18 @@ public class SwerveModule extends SubsystemBase {
   public SwerveModule(int driveMotorID, int turnMotorID, int CANCoderID, boolean isDriveInverted,
     boolean isTurnInverted, boolean isCANCoderInverted, double CANCoderZero) {
     // create drive and turn motors
-    // driveMotor = new WPI_TalonFX(driveMotorID);
-    // turnMotor = new WPI_TalonFX(turnMotorID);
+    driveMotor = new WPI_TalonFX(driveMotorID);
+    turnMotor = new WPI_TalonFX(turnMotorID);
 
     // set inverted 
-    // driveMotor.setInverted(isDriveInverted);
-    // turnMotor.setInverted(isTurnInverted);
+    driveMotor.setInverted(isDriveInverted);
+    turnMotor.setInverted(isTurnInverted);
 
-
-    /* Motor and Encoder Configuration */
     driveMotor.configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor, 0, 0);
+
     // Makes the robot stop moving when you let go of the controller sticks
     driveMotor.setNeutralMode(NeutralMode.Brake);
+    turnMotor.setNeutralMode(NeutralMode.Brake);
 
     turnEncoder = new CANCoder(CANCoderID);
     turnEncoder.configSensorDirection(isCANCoderInverted);
@@ -65,12 +72,8 @@ public class SwerveModule extends SubsystemBase {
     turnEncoder.configMagnetOffset(CANCoderZero);
     // loop the encoder values so that the value is always from -180 to 180
     turnEncoder.configAbsoluteSensorRange(AbsoluteSensorRange.Signed_PlusMinus180);
-    // Makes the robot stop moving when you let go of the controller sticks
-    turnMotor.setNeutralMode(NeutralMode.Brake);
- 
-     // Limit the PID Controller's input range between -pi and pi and set the input
-     // to be continuous.
-     turnPIDController.enableContinuousInput(-Math.PI, Math.PI);
+    // Limit the PID Controller's input range between -pi and pi and set the input to be continuous.
+    turnPIDController.enableContinuousInput(-Math.PI, Math.PI);
   }
 
   /* 
@@ -84,6 +87,36 @@ public class SwerveModule extends SubsystemBase {
     turnEncoder.setPosition(0);
     // We don't reset the drive encoders because there's not really much of a point 
     // driveMotor.setSelectedSensorPosition(0);
+  }
+
+  public SwerveModuleState getState() {
+    return new SwerveModuleState(getDriveSpeed(), Rotation2d.fromDegrees(turnEncoder.getAbsolutePosition()));
+  }
+
+  public void setDesiredState(SwerveModuleState desiredState) {
+    SwerveModuleState currentState = getState();
+
+    desiredState = SwerveModuleState.optimize(desiredState, getState().angle);
+
+    // thou shalt not move
+    if (Math.abs(desiredState.speedMetersPerSecond) <= 0.01){
+      turnMotor.set(0);
+      driveMotor.set(0);
+      return;
+    }
+
+    // Calculate the drive output from the drive PID controller.
+    double driveOutput =
+      drivePidController.calculate(currentState.speedMetersPerSecond, desiredState.speedMetersPerSecond)
+        + driveFeedforward.calculate(desiredState.speedMetersPerSecond);
+
+    double turnOutput = turnPIDController.calculate(currentState.angle.getDegrees(), 
+      desiredState.angle.getDegrees())
+       + turnFeedforward.calculate(turnPIDController.getSetpoint().velocity);
+
+    turnMotor.set(ControlMode.PercentOutput, turnOutput / 12);
+    driveMotor.set(ControlMode.PercentOutput, driveOutput / 12);
+    
   }
 
   @Override

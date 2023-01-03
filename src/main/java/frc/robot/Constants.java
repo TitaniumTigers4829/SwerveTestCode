@@ -9,6 +9,7 @@ package frc.robot;
 
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.util.Units;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide
@@ -36,24 +37,25 @@ public final class Constants {
             4.5, 3.5);  // meters/sec
 
 
+        // mechanical (-_-
         public static final double kDriveGearRatio = 7.13;
-        public static final double kWheelDiameterMeters = 0.1016; // 4 inches
+        public static final double kWheelDiameterMeters = Units.inchesToMeters(4); // 4 inches
         public static final double kWheelCircumferenceMeters = kWheelDiameterMeters * Math.PI; // C = D * pi
         public static final double kDrivetoMetersPerSecond =
             (10 * kWheelCircumferenceMeters) / (kDriveGearRatio * 2048);
 
-        public static final int frontLeftTurnID = 0-9;
-        public static final int frontLeftDriveID = 0-9;
+        public static final int frontLeftTurnID = 1;
+        public static final int frontLeftDriveID = 18;
         public static final int frontLeftCANCoderID = 22;
         public static final double frontLeftCANCoderOffset = 75.498046875;
 
-        public static final int frontRightTurnID = 0-9;
-        public static final int frontRightDriveID = 0-9;
+        public static final int frontRightTurnID = 3;
+        public static final int frontRightDriveID = 4;
         public static final int frontRightCANCoderID = 9;
         public static final double frontRightCANCoderOffset = -101.337890625;
 
-        public static final int backLeftTurnID = 0-9;
-        public static final int backLeftDriveID = 0-9;
+        public static final int backLeftTurnID = 7;
+        public static final int backLeftDriveID = 6;
         public static final int backLeftCANCoderID = 10;
         public static final double backLeftCANCoderOffset = 121.904296875;
 
