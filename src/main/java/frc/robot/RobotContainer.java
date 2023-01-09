@@ -6,8 +6,16 @@
 /*----------------------------------------------------------------------------*/
 
 package frc.robot;
-// e
+
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.JoystickConstants;
+import frc.robot.commands.DriveCommands.DriveCommand;
 import frc.robot.subsystems.DriveSubsystem;
 
 /**
@@ -18,25 +26,43 @@ import frc.robot.subsystems.DriveSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  // The robot's subsystems and commands are defined here...
-  //private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
-  //private final ExampleCommand m_autoCommand = new ExampleCommand(m_exampleSubsystem);
-  DriveSubsystem driveSubsystem = new DriveSubsystem();
 
-  //SendableChooser<Command> chooser = new SendableChooser<>();
+  DriveSubsystem driveSubsystem = new DriveSubsystem();
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
-
     configureButtonBindings();
   }
 
-  /**`
-   * E
+  private static double deadband(double value, double deadband) {
+    if (Math.abs(value) > deadband) {
+      if (value > 0.0) {
+        return (value - deadband) / (1.0 - deadband);
+      } else {
+        return (value + deadband) / (1.0 - deadband);
+      }
+    } else {
+      return 0.0;
+    }
+  }
+
+  /**
+   * print("".join([i for i in "Hello World"]))
    */
+
   private void configureButtonBindings() {
+    Joystick controller = new Joystick(JoystickConstants.controllerPortID);
+
+    JoystickButton rightBumperButton = new JoystickButton(controller, JoystickConstants.rightBumperButtonID);
+    DoubleSupplier leftJoystickX = () -> deadband(controller.getRawAxis(JoystickConstants.leftJoystickXAxis), 0.1);
+    DoubleSupplier leftJoystickY = () -> deadband(controller.getRawAxis(JoystickConstants.leftJoystickYAxis), 0.1);
+    DoubleSupplier rightJoystickX = () -> deadband(controller.getRawAxis(JoystickConstants.rightJoystickXAxis), 0.1);
+    BooleanSupplier rightBumper = () -> rightBumperButton.getAsBoolean();
+
+    driveSubsystem
+        .setDefaultCommand(new DriveCommand(driveSubsystem, leftJoystickX, leftJoystickY, rightJoystickX, rightBumper));
   }
 
   /**
@@ -47,6 +73,5 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     return null;
   }
-
 
 }

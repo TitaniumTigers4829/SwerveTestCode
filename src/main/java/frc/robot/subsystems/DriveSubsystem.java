@@ -5,10 +5,13 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.PathPlannerConstants;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.subsystems.SwerveModule;
 import com.kauailabs.navx.frc.AHRS;
@@ -25,9 +28,9 @@ public class DriveSubsystem extends SubsystemBase {
 
   public DriveSubsystem() {
     frontLeftModule = new SwerveModule(SwerveConstants.frontLeftDriveID, SwerveConstants.frontLeftTurnID, SwerveConstants.frontLeftCANCoderID, false, false, false, SwerveConstants.frontLeftCANCoderOffset);
-    frontRightModule = new SwerveModule(SwerveConstants.frontRightDriveID, SwerveConstants.frontRightTurnID, SwerveConstants.frontRightCANCoderID, false, false, false, SwerveConstants.frontRightCANCoderOffset);
+    frontRightModule = new SwerveModule(SwerveConstants.frontRightDriveID, SwerveConstants.frontRightTurnID, SwerveConstants.frontRightCANCoderID, true, false, false, SwerveConstants.frontRightCANCoderOffset);
     backLeftModule = new SwerveModule(SwerveConstants.backLeftDriveID, SwerveConstants.backLeftTurnID, SwerveConstants.backLeftCANCoderID, false, false, false, SwerveConstants.backLeftCANCoderOffset);
-    backRightModule = new SwerveModule(SwerveConstants.backRightDriveID, SwerveConstants.backRightTurnID, SwerveConstants.backRightCANCoderID, false, false, false, SwerveConstants.backRightCANCoderOffset);
+    backRightModule = new SwerveModule(SwerveConstants.backRightDriveID, SwerveConstants.backRightTurnID, SwerveConstants.backRightCANCoderID, true, false, false, SwerveConstants.backRightCANCoderOffset);
   }
 
   public void resetGyro() {
@@ -52,10 +55,22 @@ public class DriveSubsystem extends SubsystemBase {
    * module. It is in the order frontLeft, frontRight, backLeft, backRight.
    */
   public void setModuleStates(SwerveModuleState[] desiredStates) {
+    SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, DriveConstants.maxVelocity);
     frontLeftModule.setDesiredState(desiredStates[0]);
     frontRightModule.setDesiredState(desiredStates[1]);
     backLeftModule.setDesiredState(desiredStates[2]);
     backRightModule.setDesiredState(desiredStates[3]);
+  }
+
+  /**
+   * Sets all of the swerve modules speed and angle to 0.
+   */
+  public void stopModules() {
+    SwerveModuleState stoppedModuleState = new SwerveModuleState(0, new Rotation2d());
+    frontLeftModule.setDesiredState(stoppedModuleState);
+    frontRightModule.setDesiredState(stoppedModuleState);
+    backLeftModule.setDesiredState(stoppedModuleState);
+    backRightModule.setDesiredState(stoppedModuleState);
   }
 
   @Override

@@ -34,9 +34,7 @@ public class SwerveModule extends SubsystemBase {
 
   ProfiledPIDController turnPIDController = new ProfiledPIDController(SwerveConstants.turnP, 
     SwerveConstants.turnI, SwerveConstants.turnD, SwerveConstants.constraints);
-  SimpleMotorFeedforward turnFeedforward = new SimpleMotorFeedforward(0, 0);
-
-  int id = 0;
+  SimpleMotorFeedforward turnFeedforward = new SimpleMotorFeedforward(.77, .75);
 
   // __init__
   /**
@@ -80,7 +78,7 @@ public class SwerveModule extends SubsystemBase {
     returns drive motor speed in meters per second
   */
   public double getDriveSpeed() {
-    return driveMotor.getSelectedSensorVelocity() * SwerveConstants.kDrivetoMetersPerSecond;
+    return driveMotor.getSelectedSensorVelocity() * SwerveConstants.DrivetoMetersPerSecond;
   }
 
   public void resetEncoders() {
@@ -110,9 +108,8 @@ public class SwerveModule extends SubsystemBase {
       drivePidController.calculate(currentState.speedMetersPerSecond, desiredState.speedMetersPerSecond)
         + driveFeedforward.calculate(desiredState.speedMetersPerSecond);
 
-    double turnOutput = turnPIDController.calculate(currentState.angle.getDegrees(), 
-      desiredState.angle.getDegrees())
-       + turnFeedforward.calculate(turnPIDController.getSetpoint().velocity);
+      double turnOutput = turnPIDController.calculate(currentState.angle.getDegrees(), desiredState.angle.getDegrees())
+           + turnFeedforward.calculate(turnPIDController.getSetpoint().velocity);
 
     turnMotor.set(ControlMode.PercentOutput, turnOutput / 12);
     driveMotor.set(ControlMode.PercentOutput, driveOutput / 12);
@@ -121,6 +118,6 @@ public class SwerveModule extends SubsystemBase {
 
   @Override
   public void periodic() {
-    SmartDashboard.putNumber("Abs pos for encoder " + id, turnEncoder.getAbsolutePosition());
+    SmartDashboard.putNumber("Current setpoint " + turnEncoder.getDeviceID(), turnPIDController.getSetpoint().position);
   }
 }
